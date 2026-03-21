@@ -73,6 +73,41 @@
       box-shadow: 0 30px 60px rgba(37, 11, 60, 0.18);
     }
 
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .filter-chip {
+      appearance: none;
+      border: 1px solid rgba(87, 6, 140, 0.14);
+      background: white;
+      color: var(--nyu-violet);
+      border-radius: 999px;
+      padding: 10px 14px;
+      font: inherit;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: background-color 160ms ease, color 160ms ease, border-color 160ms ease, transform 160ms ease;
+    }
+
+    .filter-chip:hover,
+    .filter-chip:focus-visible {
+      border-color: rgba(87, 6, 140, 0.34);
+      transform: translateY(-1px);
+      outline: none;
+    }
+
+    .filter-chip.is-active {
+      background: var(--nyu-violet);
+      color: white;
+      border-color: var(--nyu-violet);
+      box-shadow: 0 12px 24px rgba(87, 6, 140, 0.18);
+    }
+
     .albums-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
@@ -252,6 +287,7 @@
     </section>
 
     <section class="albums-shell">
+      <div id="filters" class="filters" aria-label="Year filters"></div>
       <div id="albums" class="albums-grid" aria-label="Album list"></div>
     </section>
   </main>
@@ -289,6 +325,7 @@
     ];
 
     const albumRoot = document.getElementById("albums");
+    const filterRoot = document.getElementById("filters");
     const thumbnailsByUrl = {
       "https://photos.app.goo.gl/traWTk1jahpHLHvL9": "https://lh3.googleusercontent.com/pw/AP1GczPG43rFAbY7fFtvAackKl8um9HzzBXwFtkGG-D5xQQdb0tGD6kfHaNlwE725ROFhTw9w8100JWUq6xBdwk3SLTDo877PN5s9gppOqSw9ZWrvRpLIYk=w600-h315-p-k",
       "https://photos.app.goo.gl/zAvA4d1roBiAdeHD6": "https://lh3.googleusercontent.com/pw/AP1GczO-883RwhpAdjw4GFMNW3Ea8n_tuP9PADpl353Dnzot5NpPNz5uG7tb3AJrGVWpGepIrpT1om49lOD0wEFkFBwm-nJVzQzju-5oCqmci5p9Rv6MYMY=w600-h315-p-k",
@@ -349,9 +386,18 @@
       return title.replace(/\s+/g, "").slice(0, 4);
     };
 
-    albums
-      .sort((a, b) => b.date.localeCompare(a.date))
-      .forEach((album, index) => {
+    const sortedAlbums = [...albums].sort((a, b) => b.date.localeCompare(a.date));
+    const years = [...new Set(sortedAlbums.map((album) => album.date.slice(0, 4)))];
+    let activeYear = "All";
+
+    const renderAlbums = () => {
+      albumRoot.innerHTML = "";
+
+      const visibleAlbums = activeYear === "All"
+        ? sortedAlbums
+        : sortedAlbums.filter((album) => album.date.startsWith(activeYear));
+
+      visibleAlbums.forEach((album, index) => {
         const [a, b, c] = thumbPalettes[index % thumbPalettes.length];
         const thumbnail = thumbnailsByUrl[album.url];
         const card = document.createElement("a");
@@ -384,6 +430,28 @@
 
         albumRoot.appendChild(card);
       });
+    };
+
+    const renderFilters = () => {
+      filterRoot.innerHTML = "";
+
+      ["All", ...years].forEach((year) => {
+        const chip = document.createElement("button");
+        chip.type = "button";
+        chip.className = `filter-chip${year === activeYear ? " is-active" : ""}`;
+        chip.textContent = year;
+        chip.setAttribute("aria-pressed", String(year === activeYear));
+        chip.addEventListener("click", () => {
+          activeYear = year;
+          renderFilters();
+          renderAlbums();
+        });
+        filterRoot.appendChild(chip);
+      });
+    };
+
+    renderFilters();
+    renderAlbums();
   </script>
 </body>
 </html>
